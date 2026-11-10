@@ -1,0 +1,6 @@
+Ban "anti_cc_system_preset" {
+    Checker: IP;
+    Trigger: Frequency;
+    Condition: More Than 1000000 Per 1s;
+    Action: drop_connection; # 系统预设允许物理断连
+}

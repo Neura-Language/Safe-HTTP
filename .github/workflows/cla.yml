@@ -1,0 +1,65 @@
+# CLA Assistant —— 贡献者许可协议自动校验
+#
+# 工作原理：
+#   1. 贡献者在 PR 里评论一句签署声明（见 custom-pr-sign-comment）；
+#   2. 本工作流把 GitHub 用户名 / PR 号 / 提交 SHA 写入 signatures/cla.json；
+#   3. 之后每次 PR 都会比对签名记录，未签署则阻塞合并（status check: cla）。
+#
+# 一次性配置（仓库 Settings → Secrets and variables → Actions）：
+#   - 无需新建 secret 即可运行在公开仓库（用内置 GITHUB_TOKEN）；
+#   - 建议额外配置 PERSONAL_ACCESS_TOKEN（细粒度 PAT，权限：Contents: RW、
+#     Pull requests: RW），用于把签名提交到受保护分支 / 仓库；
+#   - 若签名库放在独立仓库，填 remote-organization-name / remote-repository-name。
+#
+# 注意：本文件中的仓库地址需与你的实际仓库一致（默认 Neura-Language/Neura-S2S）。
+name: CLA Assistant
+
+on:
+  issue_comment:
+    types: [created]
+  pull_request_target:
+    types: [opened, synchronize, reopened, closed]
+
+permissions:
+  actions: write
+  contents: write
+  pull-requests: write
+  statuses: write
+
+jobs:
+  cla-assistant:
+    # 仅在「PR 事件」或「PR 里的评论」时运行，避免普通 issue 触发
+    if: >
+      github.event_name == 'pull_request_target' ||
+      (github.event_name == 'issue_comment' && github.event.issue.pull_request)
+    runs-on: ubuntu-latest
+    steps:
+      - name: CLA Assistant
+        uses: contributor-assistant/github-action@v2.6.1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PERSONAL_ACCESS_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+        with:
+          # 签名库文件（本工作流会自动创建并提交）
+          path-to-signatures: 'signatures/cla.json'
+          # CLA 文档地址：必须是公开可访问的原始文件
+          path-to-document: 'https://github.com/Neura-Language/Neura-S2S/blob/main/CLA.md'
+          # 签名提交到哪个分支（建议独立分支，避免污染 main）
+          branch: 'cla-signatures'
+          # 机器人与依赖更新不参与签署
+          allowlist: 'bot*,dependabot[bot],github-actions[bot]'
+          # 未签署时在 PR 里贴的提示
+          custom-notsigned-prcomment: |
+            感谢你的贡献！合入前需要先签署[贡献者许可协议（CLA）](https://github.com/Neura-Language/Neura-S2S/blob/main/CLA.md)。
+            请在下方回复以下内容完成签署：
+
+            > I have read the CLA Document and I hereby sign the CLA
+
+            如果你是代表公司/组织贡献，请填写 CLA 第二部分并邮件发送至 65841827@qq.com。
+          # 签署成功后追加的提示
+          custom-pr-sign-comment: 'I have read the CLA Document and I hereby sign the CLA'
+          custom-allsigned-prcomment: '所有贡献者均已签署 CLA ✅'
+          # 合并后锁定 PR，避免事后补评论绕过
+          lock-pullrequest-aftermerge: false
+          # 需要实时校验的额外关键词（可选）
+          signed-commit-message: 'chore(cla): 记录 $contributorName 的签署'

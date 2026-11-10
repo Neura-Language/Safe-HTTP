@@ -1,0 +1,13 @@
+Policy { Plaintext: allow; }
+
+# API 接口强制抗量子加密
+Encrypt API {
+    Path Match: starts_with "/api/";
+    Action: enforce_neura_s2s;
+}
+
+# 普通网页、静态资源直接放行
+Encrypt Web {
+    Path Match: starts_with "/";
+    Action: allow_plain;
+}

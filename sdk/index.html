@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<!-- SPDX-License-Identifier: AGPL-3.0-or-later -->
+<!-- Copyright (C) 2026 Neura-L (Safe-HTTP Project) -->
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>test.jqlhtm.cn — Neura-S2S 加密接入</title>
+<style>
+  :root { color-scheme: light dark; }
+  body { font: 15px/1.6 -apple-system, "Segoe UI", "Noto Sans SC", sans-serif;
+         margin: 0; padding: 32px; }
+  .card { max-width: 760px; margin: 0 auto; border: 1px solid #8884;
+          border-radius: 12px; padding: 20px 24px; }
+  h1 { font-size: 18px; margin: 0 0 12px; }
+  #state { font-weight: 600; }
+  .ok { color: #18803b; } .err { color: #b3261e; }
+  code { background: #8881; padding: 1px 5px; border-radius: 4px; }
+  #log { font: 12px/1.5 ui-monospace, Menlo, Consolas, monospace;
+         white-space: pre-wrap; background: #8881; border-radius: 8px;
+         padding: 10px 12px; margin-top: 12px; }
+  #app { margin-top: 18px; }
+</style>
+</head>
+<body>
+<div class="card">
+  <h1>Neura-S2S 加密接入（浏览器端 WASM 解密）</h1>
+  <div>状态：<span id="state">正在建立抗量子加密通道…</span></div>
+  <div id="log"></div>
+  <div id="app"></div>
+</div>
+<script src="/neura.js"></script>
+<script>
+(function () {
+  var stateEl = document.getElementById('state');
+  var logEl = document.getElementById('log');
+  var appEl = document.getElementById('app');
+  var PIN = "__NEURA_PIN__";                     /* 由边缘端注入的指纹 pin */
+  var SITE = "__NEURA_SITE__";
+
+  function log(s) { logEl.textContent += s + "\n"; }
+  function fail(e) {
+    stateEl.textContent = '失败：' + (e && e.message ? e.message : e);
+    stateEl.className = 'err';
+    log(String(e && e.stack ? e.stack : e));
+  }
+
+  (async function () {
+    try {
+      var n = new Neura({ site: SITE, wasmUrl: '/neura-crypto.wasm',
+                          pinHex: PIN.indexOf('__') === 0 ? null : PIN });
+      await n.load();
+      log('wasm 已加载（X-Wing / ML-KEM-768 / X25519）');
+      await n.boot();
+      log('会话密钥协商完成，服务端公钥指纹 ' + n.fpHex.slice(0, 32) + '…');
+      log('会话 id ' + n.sidHex + '（浏览器侧无任何长期密钥）');
+
+      var plain = await n.request('GET', '/');
+      var body = n.bodyOf(plain);
+      log('已解密 ' + plain.length + ' 字节，真实页面渲染中…');
+      stateEl.textContent = '已通过 Neura-S2S 加密通道访问（明文从未上网）';
+      stateEl.className = 'ok';
+      appEl.innerHTML = body;
+    } catch (e) { fail(e); }
+  })();
+})();
+</script>
+</body>
+</html>

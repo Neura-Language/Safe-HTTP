@@ -1,0 +1,20 @@
+# 构建产物
+build/
+*.o
+*.d
+*.a
+*.so
+*.wasm
+
+# 编辑器 / 系统
+*.swp
+*~
+.DS_Store
+compile_commands.json
+
+# 运行时
+*.pid
+*.log
+
+# 浏览器端 WASM 产物（可复现构建：make MODE=PROXY sdk-wasm）
+!sdk/neura-crypto.wasm

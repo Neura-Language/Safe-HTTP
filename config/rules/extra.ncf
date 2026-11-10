@@ -1,0 +1,27 @@
+# =============================================================================
+# rules/extra.ncf —— 用户规则的拆分文件（通过 Include MatchLang 引入）
+#
+# 作用域：USER（与 config.ncf 一致）→ 隐式 Priority = 100，
+#         禁止 drop_connection（这里只能用 respond_403 / log_only 等）。
+# 沙盒：路径必须落在 config.ncf 所在目录之内（本文件即 config/rules/extra.ncf）。
+# =============================================================================
+
+# 后台/管理路径：明文访问直接 403（用户作用域不能用 drop，改用 respond_403）
+Encrypt Admin Area {
+    Path Match: starts_with "/admin/";
+    Action: respond_403;
+}
+
+# 探测类路径只记录不阻断（灰度观察）
+Encrypt Probe Noise {
+    Path Match: contains "/phpmyadmin";
+    Action: log_only;
+}
+
+# 短链重写也拆出来，验证 Include 里的 Rewrite 与主配置等效
+Rewrite Short Link {
+    using engine matchlang;
+    pattern: Locate "/s/" until "/" as $code {
+        Replace with "/link?code={$code}";
+    }
+}

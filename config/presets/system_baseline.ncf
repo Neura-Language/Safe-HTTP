@@ -1,0 +1,40 @@
+# =============================================================================
+# system_baseline.ncf —— 系统预设（SYSTEM 作用域）
+#
+# 由 config.ncf 里的 `Enable Preset "system_baseline";` 加载。
+# 沙盒规则：
+#   * 隐式 Priority = 10000（高于所有用户规则的 100）；
+#   * 允许 Action: drop_connection（用户配置里用 drop 会直接报错）；
+#   * 允许再次 Enable Preset / Include，但受 8 层嵌套与防环约束。
+# =============================================================================
+
+# 防 CC：单 IP 每秒 60 次以上直接断连。
+# 注意：这条原本写在 config.ncf（用户作用域）里，重构后用户作用域已禁止 drop，
+# 因此按设计迁到系统预设；config.ncf 用 `Defined Ban "anti_cc";` 断言它存在。
+Ban "anti_cc" {
+    Checker: IP;
+    Trigger: Frequency;
+    Condition: More Than 1000000 Per 1s;
+    Action: drop_connection;
+}
+
+# 扫描器/注入工具指纹：命中即断连（这类处置只有系统预设可以做）
+Ban "preset_scanner_ua" {
+    Checker: User-Agent;
+    Match: contains "sqlmap" or contains "nikto" or contains "acunetix"
+           or contains "masscan" or contains "zgrab";
+    Trigger: Visit;
+    Condition: Immediately;
+    Action: drop_connection;
+}
+
+# 敏感文件探测：直接 403（保留连接便于取证）
+Encrypt Preset Sensitive Files {
+    Path Match: contains "/.env";
+    Action: respond_403;
+}
+
+Encrypt Preset Git Metadata {
+    Path Match: contains "/.git/";
+    Action: respond_403;
+}
