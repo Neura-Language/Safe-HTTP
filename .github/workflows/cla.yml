@@ -43,7 +43,7 @@ jobs:
           # 签名库文件（本工作流会自动创建并提交）
           path-to-signatures: 'signatures/cla.json'
           # CLA 文档地址：必须是公开可访问的原始文件
-          path-to-document: 'https://github.com/Neura-Language/Neura-S2S/blob/main/CLA.md'
+          path-to-document: 'https://github.com/Neura-Language/Safe-HTTP/blob/main/CLA.md'
           # 签名提交到哪个分支（建议独立分支，避免污染 main）
           branch: 'cla-signatures'
           # 机器人与依赖更新不参与签署
@@ -60,6 +60,6 @@ jobs:
           custom-pr-sign-comment: 'I have read the CLA Document and I hereby sign the CLA'
           custom-allsigned-prcomment: '所有贡献者均已签署 CLA ✅'
           # 合并后锁定 PR，避免事后补评论绕过
-          lock-pullrequest-aftermerge: false
+          lock-pullrequest-aftermerge: true
           # 需要实时校验的额外关键词（可选）
           signed-commit-message: 'chore(cla): 记录 $contributorName 的签署'
